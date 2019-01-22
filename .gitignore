@@ -1,0 +1,7 @@
+.idea/
+*.csv
+*.json
+.vscode/
+venv/
+.python-version
+.DS_Store
