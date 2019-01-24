@@ -118,7 +118,7 @@ class StreamingSimulatorJSON(StreamingSimulator):
     def __read_file(self):
 
         try:
-            json = pd.read_json(self.file_path, typ='series', lines=self.lines)
+            json = pd.read_json(self.file_path, typ='series', lines=self.lines, orient='records')
             return json
         except Exception as e:
             print('Unexpected error: ')
@@ -140,8 +140,15 @@ class StreamingSimulatorJSON(StreamingSimulator):
 
         for index in range(0, len_data, window):
             time.sleep(self.lapse)
-            dict_to_list = []
-            for key, value in rows_values[index].items():
-                dict_to_list.append((key, value))
+            dict_to_list = list()
+            if window == 1:
+                for key, value in rows_values[index].items():
+                    dict_to_list.append((key, value))
+            else:
+                for key, value in rows_values[index:index+window].items():
+                    row_list = list()
+                    row_list.append((key, value))
+                    dict_to_list.append(row_list)
             on_simulate(dict_to_list)
+
 
