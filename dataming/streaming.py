@@ -4,20 +4,34 @@ import time
 import re
 
 
+# Response type constants
+ARRAY = 'array'
+ARRAY_DICT = 'array_dict'
+
+
 class StreamingSimulator:
 
-    def __init__(self, file_path, lapse=1, data_window=1):
+    def __init__(self, file_path, lapse=1, data_window=1, response_type=ARRAY):
         self.file_path = file_path
         self.lapse = lapse
         self.data_window = data_window
+        self.response_type = self.__check_response_type(response_type)
+
+    @staticmethod
+    def __check_response_type(response_type):
+        if response_type == 'array' or response_type == 'array_dict':
+            return response_type
+        else:
+            raise Exception("Response type not supported")
 
 
 class StreamingSimulatorCsv(StreamingSimulator):
 
-    def __init__(self, file_path, lapse=1, data_window=1, sep=',', delimiter=None, delim_whitespace=False):
+    def __init__(self, file_path, lapse=1, data_window=1, response_type=ARRAY, sep=',',
+                    delimiter=None, delim_whitespace=False):
 
         # Parent class
-        StreamingSimulator.__init__(self, file_path, lapse, data_window)
+        StreamingSimulator.__init__(self, file_path, lapse, data_window, response_type)
 
         # Checks
         self.check_csv(file_path)
@@ -76,21 +90,26 @@ class StreamingSimulatorCsv(StreamingSimulator):
         shapes = self.__data.shape
         print("Simulating %d rows..." % (shapes[0], ))
 
-        rows_values = self.__data.values
-        len_data = len(rows_values)
         window = self.data_window
+        if self.response_type == ARRAY:
+            rows_values = self.__data.values
 
-        for index in range(0, len_data, window):
-            time.sleep(self.lapse)
-            on_simulate(rows_values[index:index+window])
+            for index in range(0, len(rows_values), window):
+                time.sleep(self.lapse)
+                on_simulate(rows_values[index:index+window])
+        elif self.response_type == ARRAY_DICT:
+            rows = self.__data.to_dict(orient='records')
+            for index in range(0, len(rows), window):
+                time.sleep(self.lapse)
+                on_simulate(rows[index:index+window])
 
 
 class StreamingSimulatorJSON(StreamingSimulator):
 
-    def __init__(self, file_path, lapse=1, data_window=1, lines=False):
+    def __init__(self, file_path, lapse=1, data_window=1, response_type=ARRAY, lines=False):
 
         # Parent class
-        StreamingSimulator.__init__(self, file_path, lapse, data_window)
+        StreamingSimulator.__init__(self, file_path, lapse, data_window, response_type)
 
         # Checks
         self.check_json(file_path)
@@ -118,7 +137,11 @@ class StreamingSimulatorJSON(StreamingSimulator):
     def __read_file(self):
 
         try:
-            json = pd.read_json(self.file_path, typ='series', lines=self.lines, orient='records')
+            json = pd.read_json(
+                self.file_path,
+                typ='series',
+                lines=self.lines,
+                orient='records')
             return json
         except Exception as e:
             print('Unexpected error: ')
@@ -150,5 +173,3 @@ class StreamingSimulatorJSON(StreamingSimulator):
                     row_list.append((key, value))
                     dict_to_list.append(row_list)
             on_simulate(dict_to_list)
-
-
