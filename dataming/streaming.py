@@ -143,6 +143,8 @@ class StreamingSimulatorJSON(StreamingSimulator):
                 lines=self.lines,
                 orient='records')
             return json
+        except ValueError:
+            raise ValueError("JSON Format not correct")
         except Exception as e:
             raise e
 
@@ -158,7 +160,6 @@ class StreamingSimulatorJSON(StreamingSimulator):
 
         rows_values = self.__data
         len_data = len(rows_values)
-        print(rows_values.values)
         window = self.data_window
 
         for index in range(0, len_data, window):
